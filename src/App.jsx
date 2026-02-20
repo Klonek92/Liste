@@ -190,7 +190,7 @@ const App = () => {
         <header className="mb-10 border-b border-slate-800 pb-6 flex justify-between items-start">
           <div>
             <h1 className="text-4xl font-extrabold tracking-tight text-white">GiftPlanner <span className="text-indigo-500">Pro</span></h1>
-            <p className="text-slate-400 font-medium">Controlling & Budget-Management</p>
+            <p className="text-slate-400 font-medium">by Jan Klonek</p>
           </div>
           <button onClick={handleLogout} className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-500 hover:text-red-400 transition-colors shadow-sm">
             <LogOut className="w-5 h-5" />
