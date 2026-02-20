@@ -13,6 +13,7 @@ import {
   addDoc, 
   deleteDoc, 
   doc, 
+  updateDoc,
   setDoc 
 } from 'firebase/firestore';
 import { 
@@ -26,7 +27,10 @@ import {
   AlertTriangle,
   Calendar,
   LogOut,
-  Gift
+  Gift,
+  Edit2,
+  Check,
+  X
 } from 'lucide-react';
 
 // --- Firebase Konfiguration ---
@@ -53,6 +57,8 @@ const App = () => {
   
   const [view, setView] = useState('events'); 
   const [selectedEventId, setSelectedEventId] = useState(null);
+  const [editingGiftId, setEditingGiftId] = useState(null);
+  const [editFormData, setEditFormData] = useState({ name: '', price: '', giverId: '' });
 
   const [givers, setGivers] = useState([]);
   const [events, setEvents] = useState([]);
@@ -60,7 +66,6 @@ const App = () => {
   const [eventBudgets, setEventBudgets] = useState({});
   const [eventParticipants, setEventParticipants] = useState({});
 
-  // --- Authentifizierung ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -76,7 +81,6 @@ const App = () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
-      console.error("Login Error:", err);
       setAuthError("Login fehlgeschlagen.");
     } finally {
       setLoading(false);
@@ -85,7 +89,6 @@ const App = () => {
 
   const handleLogout = () => signOut(auth);
 
-  // --- Echtzeit-Daten ---
   useEffect(() => {
     if (!user) return;
     const basePath = ['artifacts', APP_ID, 'users', user.uid];
@@ -117,7 +120,6 @@ const App = () => {
     };
   }, [user]);
 
-  // --- Logik ---
   const selectedEvent = useMemo(() => events.find(e => e.id === selectedEventId), [events, selectedEventId]);
   const eventGifts = useMemo(() => gifts.filter(g => g.eventId === selectedEventId), [gifts, selectedEventId]);
 
@@ -142,6 +144,21 @@ const App = () => {
     e.target.reset();
   };
 
+  const startEditGift = (gift) => {
+    setEditingGiftId(gift.id);
+    setEditFormData({ name: gift.name, price: gift.price, giverId: gift.giverId });
+  };
+
+  const saveEditGift = async (giftId) => {
+    const giftRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'gifts', giftId);
+    await updateDoc(giftRef, {
+      name: editFormData.name,
+      price: Number(editFormData.price),
+      giverId: editFormData.giverId
+    });
+    setEditingGiftId(null);
+  };
+
   if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-indigo-500"><Loader2 className="animate-spin w-12 h-12" /></div>;
 
   if (!user) {
@@ -164,7 +181,6 @@ const App = () => {
     <div className="min-h-screen bg-slate-950 p-4 md:p-6 text-slate-100 font-sans">
       <div className="max-w-4xl mx-auto">
         
-        {/* Header - Kompakter */}
         <header className="mb-6 flex justify-between items-center border-b border-slate-800 pb-4">
           <div>
             <h1 className="text-2xl font-black text-white leading-tight">GiftPlanner <span className="text-indigo-500">Pro</span></h1>
@@ -173,7 +189,6 @@ const App = () => {
           <button onClick={handleLogout} className="p-2 hover:text-red-400 transition-colors"><LogOut className="w-5 h-5" /></button>
         </header>
 
-        {/* Nav - Schmaler */}
         <nav className="flex space-x-2 mb-6 bg-slate-900/50 p-1 rounded-xl border border-slate-800 max-w-xs">
           <button onClick={() => setView('events')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${view !== 'givers' ? 'bg-indigo-600 text-white' : 'text-slate-500'}`}>Anlässe</button>
           <button onClick={() => setView('givers')} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${view === 'givers' ? 'bg-indigo-600 text-white' : 'text-slate-500'}`}>Personen</button>
@@ -181,7 +196,6 @@ const App = () => {
 
         {view === 'events' && (
           <div className="space-y-6">
-            {/* Neuer Anlass - Horizontaler */}
             <section className="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg">
               <form onSubmit={handleAddEvent} className="flex flex-wrap md:flex-nowrap gap-2 items-end">
                 <div className="flex-1 min-w-[140px]">
@@ -200,7 +214,6 @@ const App = () => {
               </form>
             </section>
 
-            {/* Liste - Zweispaltig */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {events.map(event => (
                 <div key={event.id} onClick={() => { setSelectedEventId(event.id); setView('detail'); }} className="bg-slate-900 p-3 rounded-xl border border-slate-800 hover:border-indigo-500/50 cursor-pointer flex justify-between items-center group transition-all">
@@ -231,7 +244,6 @@ const App = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Teilnehmer - Kompakter im Grid */}
               <div className="lg:col-span-1 space-y-2">
                 <h3 className="text-xs font-black uppercase text-slate-500 px-1">Budgets</h3>
                 {givers.map(giver => {
@@ -259,7 +271,6 @@ const App = () => {
                 })}
               </div>
 
-              {/* Geschenke - Kompakter */}
               <div className="lg:col-span-2 space-y-3">
                 <section className="bg-slate-900 p-3 rounded-xl border border-slate-800 shadow-sm">
                   <form onSubmit={async (e) => {
@@ -285,10 +296,45 @@ const App = () => {
                     <tbody className="divide-y divide-slate-800">
                       {eventGifts.map(gift => (
                         <tr key={gift.id} className="hover:bg-slate-800/50">
-                          <td className="p-3 font-bold">{gift.name}</td>
-                          <td className="p-3 text-right text-indigo-400 font-mono">{Number(gift.price).toFixed(2)}€</td>
-                          <td className="p-3 text-slate-500">{givers.find(g => g.id === gift.giverId)?.name}</td>
-                          <td className="p-3 text-right"><button onClick={() => deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'gifts', gift.id))} className="text-slate-600 hover:text-red-500"><Trash2 className="w-4 h-4" /></button></td>
+                          {editingGiftId === gift.id ? (
+                            <>
+                              <td className="p-2" colSpan="2">
+                                <input 
+                                  className="w-full p-1 bg-slate-800 rounded text-white" 
+                                  value={editFormData.name} 
+                                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                                />
+                                <input 
+                                  type="number"
+                                  className="w-full mt-1 p-1 bg-slate-800 rounded text-white font-mono" 
+                                  value={editFormData.price} 
+                                  onChange={(e) => setEditFormData({...editFormData, price: e.target.value})}
+                                />
+                              </td>
+                              <td className="p-2">
+                                <select 
+                                  className="w-full p-1 bg-slate-800 rounded text-white" 
+                                  value={editFormData.giverId}
+                                  onChange={(e) => setEditFormData({...editFormData, giverId: e.target.value})}
+                                >
+                                  {activeGiversForEvent.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                </select>
+                              </td>
+                              <td className="p-2 text-right flex gap-1 justify-end">
+                                <button onClick={() => saveEditGift(gift.id)} className="text-emerald-400 p-1"><Check className="w-4 h-4" /></button>
+                                <button onClick={() => setEditingGiftId(null)} className="text-slate-500 p-1"><X className="w-4 h-4" /></button>
+                              </>
+                            ) : (
+                            <>
+                              <td className="p-3 font-bold">{gift.name}</td>
+                              <td className="p-3 text-right text-indigo-400 font-mono">{Number(gift.price).toFixed(2)}€</td>
+                              <td className="p-3 text-slate-500">{givers.find(g => g.id === gift.giverId)?.name}</td>
+                              <td className="p-3 text-right flex gap-2 justify-end">
+                                <button onClick={() => startEditGift(gift)} className="text-slate-600 hover:text-indigo-400"><Edit2 className="w-4 h-4" /></button>
+                                <button onClick={() => deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'gifts', gift.id))} className="text-slate-600 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                              </td>
+                            </>
+                          )}
                         </tr>
                       ))}
                     </tbody>
