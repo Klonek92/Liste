@@ -365,4 +365,17 @@ const App = () => {
             </section>
             <div className="grid grid-cols-2 gap-2">
               {givers.map(giver => (
-                <div key={giver.id} className="bg-slate-900 p-3 rounded-lg border border-slate-800 flex justify-between items
+                <div key={giver.id} className="bg-slate-900 p-3 rounded-lg border border-slate-800 flex justify-between items-center group">
+                  <span className="font-bold text-sm truncate">{giver.name}</span>
+                  <button onClick={() => deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'givers', giver.id))} className="text-slate-700 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default App;
