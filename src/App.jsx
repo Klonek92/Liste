@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getAuth, 
-  signInAnonymously, 
-  onAuthStateChanged 
+  signInWithEmailAndPassword, 
+  onAuthStateChanged,
+  signOut 
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -23,7 +24,8 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
-  Calendar // <--- Dieses Icon hat gefehlt
+  Calendar,
+  LogOut
 } from 'lucide-react';
 
 // --- Firebase Konfiguration ---
@@ -45,6 +47,9 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
   const [view, setView] = useState('events'); 
   const [selectedEventId, setSelectedEventId] = useState(null);
 
@@ -56,22 +61,28 @@ const App = () => {
 
   // --- Authentifizierung ---
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        setUser(u);
-        setLoading(false);
-      } else {
-        try {
-          await signInAnonymously(auth);
-        } catch (err) {
-          console.error("Auth Error:", err);
-          setAuthError("Fehler bei der Anmeldung.");
-          setLoading(false);
-        }
-      }
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthError(null);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      console.error("Login Error:", err);
+      setAuthError("Login fehlgeschlagen. Bitte E-Mail und Passwort prüfen.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => signOut(auth);
 
   // --- Echtzeit-Daten ---
   useEffect(() => {
@@ -131,14 +142,59 @@ const App = () => {
   };
 
   if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-indigo-500"><Loader2 className="animate-spin w-12 h-12" /></div>;
-  if (authError) return <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-red-400 p-6"><AlertTriangle className="w-12 h-12 mb-4" /> {authError}</div>;
 
+  // --- Login-Ansicht ---
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-black text-white">GiftPlanner <span className="text-indigo-500">Pro</span></h1>
+            <p className="text-slate-500 mt-2">Bitte anmelden für Synchronisation</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input 
+              type="email" 
+              placeholder="E-Mail Adresse" 
+              className="w-full p-4 bg-slate-800 border border-slate-700 rounded-2xl text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input 
+              type="password" 
+              placeholder="Passwort" 
+              className="w-full p-4 bg-slate-800 border border-slate-700 rounded-2xl text-white outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-indigo-900/40">
+              Jetzt anmelden
+            </button>
+          </form>
+          {authError && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center text-red-400 text-sm">
+              <AlertTriangle className="w-4 h-4 mr-2 shrink-0" /> {authError}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // --- Haupt-App ---
   return (
     <div className="min-h-screen bg-slate-950 p-4 md:p-8 text-slate-100 font-sans">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-10 border-b border-slate-800 pb-6">
-          <h1 className="text-4xl font-extrabold tracking-tight text-white">GiftPlanner <span className="text-indigo-500">Pro</span></h1>
-          <p className="text-slate-400 font-medium">Controlling & Budget-Management</p>
+        <header className="mb-10 border-b border-slate-800 pb-6 flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-white">GiftPlanner <span className="text-indigo-500">Pro</span></h1>
+            <p className="text-slate-400 font-medium">Controlling & Budget-Management</p>
+          </div>
+          <button onClick={handleLogout} className="p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-500 hover:text-red-400 transition-colors shadow-sm">
+            <LogOut className="w-5 h-5" />
+          </button>
         </header>
 
         <nav className="flex space-x-2 mb-8 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800 backdrop-blur-sm">
