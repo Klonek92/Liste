@@ -22,7 +22,8 @@ import {
   Loader2,
   Eye,
   EyeOff,
-  AlertTriangle
+  AlertTriangle,
+  Calendar // <--- Dieses Icon hat gefehlt
 } from 'lucide-react';
 
 // --- Firebase Konfiguration ---
