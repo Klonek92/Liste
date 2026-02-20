@@ -300,38 +300,43 @@ const App = () => {
                             <>
                               <td className="p-2" colSpan="2">
                                 <input 
-                                  className="w-full p-1 bg-slate-800 rounded text-white" 
+                                  className="w-full p-1 bg-slate-800 rounded text-white text-xs" 
                                   value={editFormData.name} 
                                   onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
                                 />
                                 <input 
                                   type="number"
-                                  className="w-full mt-1 p-1 bg-slate-800 rounded text-white font-mono" 
+                                  className="w-full mt-1 p-1 bg-slate-800 rounded text-white font-mono text-xs" 
                                   value={editFormData.price} 
                                   onChange={(e) => setEditFormData({...editFormData, price: e.target.value})}
                                 />
                               </td>
                               <td className="p-2">
                                 <select 
-                                  className="w-full p-1 bg-slate-800 rounded text-white" 
+                                  className="w-full p-1 bg-slate-800 rounded text-white text-xs" 
                                   value={editFormData.giverId}
                                   onChange={(e) => setEditFormData({...editFormData, giverId: e.target.value})}
                                 >
                                   {activeGiversForEvent.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                                 </select>
                               </td>
-                              <td className="p-2 text-right flex gap-1 justify-end">
-                                <button onClick={() => saveEditGift(gift.id)} className="text-emerald-400 p-1"><Check className="w-4 h-4" /></button>
-                                <button onClick={() => setEditingGiftId(null)} className="text-slate-500 p-1"><X className="w-4 h-4" /></button>
-                              </>
-                            ) : (
+                              <td className="p-2 text-right">
+                                <div className="flex gap-1 justify-end">
+                                  <button onClick={() => saveEditGift(gift.id)} className="text-emerald-400 p-1"><Check className="w-4 h-4" /></button>
+                                  <button onClick={() => setEditingGiftId(null)} className="text-slate-500 p-1"><X className="w-4 h-4" /></button>
+                                </div>
+                              </td>
+                            </>
+                          ) : (
                             <>
                               <td className="p-3 font-bold">{gift.name}</td>
                               <td className="p-3 text-right text-indigo-400 font-mono">{Number(gift.price).toFixed(2)}€</td>
                               <td className="p-3 text-slate-500">{givers.find(g => g.id === gift.giverId)?.name}</td>
-                              <td className="p-3 text-right flex gap-2 justify-end">
-                                <button onClick={() => startEditGift(gift)} className="text-slate-600 hover:text-indigo-400"><Edit2 className="w-4 h-4" /></button>
-                                <button onClick={() => deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'gifts', gift.id))} className="text-slate-600 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                              <td className="p-3 text-right">
+                                <div className="flex gap-2 justify-end">
+                                  <button onClick={() => startEditGift(gift)} className="text-slate-600 hover:text-indigo-400"><Edit2 className="w-4 h-4" /></button>
+                                  <button onClick={() => deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'gifts', gift.id))} className="text-slate-600 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                                </div>
                               </td>
                             </>
                           )}
@@ -360,17 +365,4 @@ const App = () => {
             </section>
             <div className="grid grid-cols-2 gap-2">
               {givers.map(giver => (
-                <div key={giver.id} className="bg-slate-900 p-3 rounded-lg border border-slate-800 flex justify-between items-center group">
-                  <span className="font-bold text-sm truncate">{giver.name}</span>
-                  <button onClick={() => deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'givers', giver.id))} className="text-slate-700 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default App;
+                <div key={giver.id} className="bg-slate-900 p-3 rounded-lg border border-slate-800 flex justify-between items
