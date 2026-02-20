@@ -2,7 +2,7 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}", // Hier muss JS und JSX stehen!
+    "./src/**/*.{js,ts,jsx,tsx}", // Hier muss exakt dieser Pfad stehen
   ],
   theme: {
     extend: {},
