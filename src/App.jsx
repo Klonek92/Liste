@@ -113,6 +113,13 @@ const App = () => {
     if (selectedEventId === eventId) setView('events');
   };
 
+  const handleDeleteEventPermanent = async (eventId, eventName) => {
+    if (window.confirm(`Möchtest du den Anlass "${eventName}" wirklich unwiderruflich löschen? Alle zugehörigen Daten gehen verloren.`)) {
+      await deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'events', eventId));
+      if (selectedEventId === eventId) setView('events');
+    }
+  };
+
   const handleCopyEvent = async (event) => {
     const newEvent = await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'events'), {
       name: `${event.name} (Kopie)`,
@@ -164,7 +171,7 @@ const App = () => {
             <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">GiftPlanner <span className="text-indigo-500">Pro</span></h1>
             <p className="text-slate-500 text-xs mt-1 font-medium italic">by Jan Klonek</p>
           </div>
-          <button onClick={() => signOut(auth)} className="p-3 bg-slate-900 border border-slate-800 rounded-2xl hover:text-red-400 transition-all"><LogOut className="w-6 h-6" /></button>
+          <button onClick={() => signOut(auth)} className="p-3 bg-slate-900 border border-slate-800 rounded-2xl hover:text-red-400 transition-all shadow-sm"><LogOut className="w-6 h-6" /></button>
         </header>
 
         <nav className="flex flex-wrap gap-3 mb-8">
@@ -199,7 +206,6 @@ const App = () => {
                       <h3 className="text-xl font-black text-white group-hover:text-indigo-400 transition-colors truncate mt-1">{event.name}</h3>
                       <div className="flex items-center text-slate-500 text-xs mt-2 font-medium"><Calendar className="w-4 h-4 mr-2" /> {new Date(event.date).toLocaleDateString('de-DE')}</div>
                       
-                      {/* Dashboard Status-Vorschau */}
                       <div className="flex gap-3 mt-4 pt-4 border-t border-slate-800/50">
                         <div className="flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-slate-500" /> <span className="text-xs font-bold">{stats.ideas}</span></div>
                         <div className="flex items-center gap-1.5"><ShoppingCart className="w-3.5 h-3.5 text-amber-500" /> <span className="text-xs font-bold">{stats.bought}</span></div>
@@ -209,10 +215,17 @@ const App = () => {
                     
                     <div className="flex justify-between items-center pt-2 border-t border-slate-800/50">
                       <div className="flex gap-1">
-                        <button onClick={() => handleCopyEvent(event)} title="Kopieren" className="p-2 text-slate-600 hover:text-indigo-400 transition-all hover:bg-slate-800 rounded-lg"><Copy className="w-4 h-4" /></button>
+                        {!showArchived && (
+                          <button onClick={() => handleCopyEvent(event)} title="Kopieren" className="p-2 text-slate-600 hover:text-indigo-400 transition-all hover:bg-slate-800 rounded-lg"><Copy className="w-4 h-4" /></button>
+                        )}
                         <button onClick={() => handleArchiveEvent(event.id, !showArchived)} title={showArchived ? "Wiederherstellen" : "Archivieren"} className="p-2 text-slate-600 hover:text-amber-400 transition-all hover:bg-slate-800 rounded-lg">
                           {showArchived ? <RefreshCw className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                         </button>
+                        {showArchived && (
+                          <button onClick={() => handleDeleteEventPermanent(event.id, event.name)} title="Endgültig löschen" className="p-2 text-slate-600 hover:text-red-500 transition-all hover:bg-slate-800 rounded-lg">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                       <ChevronRight onClick={() => { setSelectedEventId(event.id); setView('detail'); }} className="w-6 h-6 text-slate-700 cursor-pointer group-hover:text-indigo-500 transform group-hover:translate-x-1 transition-all" />
                     </div>
