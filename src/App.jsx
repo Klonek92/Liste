@@ -20,6 +20,8 @@ import {
   Plus, 
   Trash2, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   ArrowLeft,
   Loader2,
   Eye,
@@ -59,6 +61,9 @@ const App = () => {
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [editingGiftId, setEditingGiftId] = useState(null);
   const [editFormData, setEditFormData] = useState({ name: '', price: '', giverId: '' });
+  
+  // State für eingeklappte Budgets (speichert IDs der ausgeklappten Teilnehmer)
+  const [expandedGivers, setExpandedGivers] = useState({});
 
   const [givers, setGivers] = useState([]);
   const [events, setEvents] = useState([]);
@@ -159,6 +164,11 @@ const App = () => {
     setEditingGiftId(null);
   };
 
+  // Hilfsfunktion zum Toggeln der Ansicht
+  const toggleGiverExpansion = (id) => {
+    setExpandedGivers(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-indigo-500"><Loader2 className="animate-spin w-12 h-12" /></div>;
 
   if (!user) {
@@ -248,22 +258,46 @@ const App = () => {
                 <h3 className="text-xs font-black uppercase text-slate-500 px-1">Budgets</h3>
                 {givers.map(giver => {
                   const isPart = (eventParticipants[selectedEventId] || []).includes(giver.id);
+                  const isExpanded = expandedGivers[giver.id];
                   const spent = getGiverSpending(selectedEventId, giver.id);
                   const budget = eventBudgets[selectedEventId]?.[giver.id] || 0;
+                  
                   return (
-                    <div key={giver.id} className={`p-3 rounded-xl border ${isPart ? 'bg-slate-900 border-indigo-500/30' : 'bg-slate-950 border-slate-800 opacity-40'}`}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-bold">{giver.name}</span>
+                    <div key={giver.id} className={`p-2 rounded-xl border transition-all ${isPart ? 'bg-slate-900 border-indigo-500/30' : 'bg-slate-950 border-slate-800 opacity-40'}`}>
+                      <div className="flex justify-between items-center">
+                        <div 
+                          className="flex items-center gap-2 cursor-pointer flex-1"
+                          onClick={() => isPart && toggleGiverExpansion(giver.id)}
+                        >
+                          {isPart && (isExpanded ? <ChevronUp className="w-3 h-3 text-indigo-400" /> : <ChevronDown className="w-3 h-3 text-slate-500" />)}
+                          <span className="text-sm font-bold truncate">{giver.name}</span>
+                        </div>
+                        
                         <button onClick={() => {
                           const current = eventParticipants[selectedEventId] || [];
                           const ids = current.includes(giver.id) ? current.filter(i => i !== giver.id) : [...current, giver.id];
                           setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'participants', selectedEventId), { ids });
-                        }}>{isPart ? <Eye className="w-4 h-4 text-indigo-400" /> : <EyeOff className="w-4 h-4" />}</button>
+                        }} className="ml-2">
+                          {isPart ? <Eye className="w-4 h-4 text-indigo-400" /> : <EyeOff className="w-4 h-4 text-slate-600" />}
+                        </button>
                       </div>
-                      {isPart && (
-                        <div className="flex items-center gap-2">
-                          <input type="number" value={budget || ''} placeholder="Budget" className="w-full p-1 bg-slate-800 rounded text-xs outline-none" onChange={(e) => setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'budgets', selectedEventId), {...(eventBudgets[selectedEventId] || {}), [giver.id]: Number(e.target.value)})} />
-                          <span className={`text-[10px] font-bold whitespace-nowrap ${spent > budget && budget > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{spent.toFixed(2)}€</span>
+
+                      {/* Einklappbarer Teil */}
+                      {isPart && isExpanded && (
+                        <div className="mt-3 pt-2 border-t border-slate-800 animate-in slide-in-from-top-1 duration-200">
+                          <div className="flex items-center gap-2">
+                            <input 
+                              type="number" 
+                              value={budget || ''} 
+                              placeholder="Budget" 
+                              className="w-full p-1.5 bg-slate-800 rounded text-xs outline-none border border-slate-700 focus:border-indigo-500" 
+                              onChange={(e) => setDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'budgets', selectedEventId), {...(eventBudgets[selectedEventId] || {}), [giver.id]: Number(e.target.value)})} 
+                            />
+                            <div className="text-right">
+                              <p className="text-[8px] text-slate-500 uppercase font-bold">Ausgegeben</p>
+                              <p className={`text-xs font-black ${spent > budget && budget > 0 ? 'text-red-400' : 'text-emerald-400'}`}>{spent.toFixed(2)}€</p>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -297,36 +331,17 @@ const App = () => {
                       {eventGifts.map(gift => (
                         <tr key={gift.id} className="hover:bg-slate-800/50">
                           {editingGiftId === gift.id ? (
-                            <>
-                              <td className="p-2" colSpan="2">
-                                <input 
-                                  className="w-full p-1 bg-slate-800 rounded text-white text-xs" 
-                                  value={editFormData.name} 
-                                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                                />
-                                <input 
-                                  type="number"
-                                  className="w-full mt-1 p-1 bg-slate-800 rounded text-white font-mono text-xs" 
-                                  value={editFormData.price} 
-                                  onChange={(e) => setEditFormData({...editFormData, price: e.target.value})}
-                                />
-                              </td>
-                              <td className="p-2">
-                                <select 
-                                  className="w-full p-1 bg-slate-800 rounded text-white text-xs" 
-                                  value={editFormData.giverId}
-                                  onChange={(e) => setEditFormData({...editFormData, giverId: e.target.value})}
-                                >
+                            <td className="p-2" colSpan="4">
+                              <div className="flex gap-2 items-center">
+                                <input className="flex-1 p-1.5 bg-slate-800 rounded text-white text-xs" value={editFormData.name} onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} />
+                                <input type="number" className="w-20 p-1.5 bg-slate-800 rounded text-white text-xs" value={editFormData.price} onChange={(e) => setEditFormData({...editFormData, price: e.target.value})} />
+                                <select className="flex-1 p-1.5 bg-slate-800 rounded text-white text-xs" value={editFormData.giverId} onChange={(e) => setEditFormData({...editFormData, giverId: e.target.value})}>
                                   {activeGiversForEvent.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                                 </select>
-                              </td>
-                              <td className="p-2 text-right">
-                                <div className="flex gap-1 justify-end">
-                                  <button onClick={() => saveEditGift(gift.id)} className="text-emerald-400 p-1"><Check className="w-4 h-4" /></button>
-                                  <button onClick={() => setEditingGiftId(null)} className="text-slate-500 p-1"><X className="w-4 h-4" /></button>
-                                </div>
-                              </td>
-                            </>
+                                <button onClick={() => saveEditGift(gift.id)} className="text-emerald-400"><Check className="w-4 h-4" /></button>
+                                <button onClick={() => setEditingGiftId(null)} className="text-slate-500"><X className="w-4 h-4" /></button>
+                              </div>
+                            </td>
                           ) : (
                             <>
                               <td className="p-3 font-bold">{gift.name}</td>
