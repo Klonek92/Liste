@@ -10,7 +10,8 @@ import {
   Plus, Trash2, ChevronRight, ChevronDown, ChevronUp, ArrowLeft,
   Loader2, Eye, EyeOff, AlertTriangle, Calendar, LogOut, Gift,
   Edit2, Check, X, BarChart3, LayoutList, Settings2, Clock, 
-  Package, ShoppingCart, CheckCircle2, Archive, Copy, RefreshCw, Save
+  Package, ShoppingCart, CheckCircle2, Archive, Copy, RefreshCw, Save,
+  ExternalLink, Link2
 } from 'lucide-react';
 
 const firebaseConfig = {
@@ -38,7 +39,7 @@ const App = () => {
   const [editingGiftId, setEditingGiftId] = useState(null);
   const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [editEventData, setEditEventData] = useState({ name: '', date: '', category: '' });
-  const [editFormData, setEditFormData] = useState({ name: '', price: '', giverId: '', status: 'Idee' });
+  const [editFormData, setEditFormData] = useState({ name: '', price: '', giverId: '', status: 'Idee', url: '' });
   const [isBudgetsCollapsed, setIsBudgetsCollapsed] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
@@ -86,7 +87,6 @@ const App = () => {
 
   const selectedEvent = useMemo(() => events.find(e => e.id === selectedEventId), [events, selectedEventId]);
   
-  // Sortierung: Aktive Schenkende nach oben
   const sortedGivers = useMemo(() => {
     return [...givers].sort((a, b) => {
       const isAPart = (eventParticipants[selectedEventId] || []).includes(a.id);
@@ -234,7 +234,6 @@ const App = () => {
               <button onClick={() => setIsBudgetsCollapsed(!isBudgetsCollapsed)} className="w-full sm:w-auto flex items-center justify-center gap-2 text-[10px] md:text-xs font-black uppercase text-indigo-400 bg-indigo-400/10 px-4 py-2 rounded-xl border border-indigo-500/10 transition-all hover:bg-indigo-400/20">{isBudgetsCollapsed ? <><Settings2 className="w-4 h-4" /> Budgets</> : <><LayoutList className="w-4 h-4" /> Liste</>}</button>
             </div>
             
-            {/* Header / Edit Bereich */}
             <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 p-8 md:p-10 rounded-[2rem] shadow-2xl relative overflow-hidden">
               {isEditingEvent ? (
                 <div className="space-y-4 relative z-10">
@@ -302,17 +301,28 @@ const App = () => {
                     e.preventDefault();
                     const fd = new FormData(e.target);
                     await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'gifts'), {
-                      eventId: selectedEventId, name: fd.get('name'), price: Number(fd.get('price')) || 0, giverId: fd.get('giverId') || '', status: 'Idee'
+                      eventId: selectedEventId, 
+                      name: fd.get('name'), 
+                      price: Number(fd.get('price')) || 0, 
+                      giverId: fd.get('giverId') || '', 
+                      url: fd.get('url') || '',
+                      status: 'Idee'
                     });
                     e.target.reset();
-                  }} className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-                    <input name="name" placeholder="Geschenk" required className="sm:col-span-5 p-4 bg-slate-800 border border-slate-700 rounded-2xl text-base outline-none" />
-                    <input name="price" type="number" step="0.01" placeholder="€" required className="sm:col-span-2 p-4 bg-slate-800 border border-slate-700 rounded-2xl text-base font-mono outline-none" />
-                    <select name="giverId" className="sm:col-span-3 p-4 bg-slate-800 border border-slate-700 rounded-2xl text-xs outline-none">
-                      <option value="">Noch offen</option>
-                      {activeGiversForEvent.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                    </select>
-                    <button type="submit" className="sm:col-span-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black flex items-center justify-center py-3"><Plus className="w-8 h-8" /></button>
+                  }} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                      <input name="name" placeholder="Geschenk" required className="sm:col-span-5 p-4 bg-slate-800 border border-slate-700 rounded-2xl text-base outline-none focus:ring-1 focus:ring-indigo-500" />
+                      <input name="price" type="number" step="0.01" placeholder="€" required className="sm:col-span-2 p-4 bg-slate-800 border border-slate-700 rounded-2xl text-base font-mono outline-none focus:ring-1 focus:ring-indigo-500" />
+                      <select name="giverId" className="sm:col-span-3 p-4 bg-slate-800 border border-slate-700 rounded-2xl text-xs outline-none focus:ring-1 focus:ring-indigo-500">
+                        <option value="">Noch offen</option>
+                        {activeGiversForEvent.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                      </select>
+                      <button type="submit" className="sm:col-span-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black flex items-center justify-center py-3 transition-colors"><Plus className="w-8 h-8" /></button>
+                    </div>
+                    <div className="relative">
+                      <Link2 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input name="url" placeholder="Bestell-Link (optional)" className="w-full p-3 pl-10 bg-slate-800/50 border border-slate-700 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500" />
+                    </div>
                   </form>
                 </section>
 
@@ -327,9 +337,19 @@ const App = () => {
                             <select className="p-4 bg-slate-800 border border-slate-700 rounded-2xl text-xs outline-none" value={editFormData.giverId} onChange={(e) => setEditFormData({...editFormData, giverId: e.target.value})}><option value="">Offen</option>{activeGiversForEvent.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select>
                             <select className="p-4 bg-slate-800 border border-slate-700 rounded-2xl text-xs outline-none" value={editFormData.status} onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}><option value="Idee">💡 Idee</option><option value="Gekauft">🛒 Gekauft</option><option value="Verpackt">🎁 Verpackt</option></select>
                           </div>
+                          <div className="relative">
+                            <Link2 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
+                            <input placeholder="Link" className="w-full p-3 pl-10 bg-slate-800 border border-slate-700 rounded-xl text-xs outline-none text-white" value={editFormData.url || ''} onChange={(e) => setEditFormData({...editFormData, url: e.target.value})} />
+                          </div>
                           <div className="flex justify-end gap-3 mt-2">
                             <button onClick={() => { 
-                              updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'gifts', gift.id), { name: editFormData.name, price: Number(editFormData.price) || 0, giverId: editFormData.giverId, status: editFormData.status });
+                              updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'gifts', gift.id), { 
+                                name: editFormData.name, 
+                                price: Number(editFormData.price) || 0, 
+                                giverId: editFormData.giverId, 
+                                status: editFormData.status,
+                                url: editFormData.url || ''
+                              });
                               setEditingGiftId(null);
                             }} className="text-emerald-400 bg-emerald-400/10 px-6 py-2 rounded-xl text-sm font-black flex items-center gap-2 hover:bg-emerald-400/20"><Check className="w-4 h-4" /> Save</button>
                             <button onClick={() => setEditingGiftId(null)} className="text-slate-500 bg-slate-500/10 px-6 py-2 rounded-xl text-sm font-black flex items-center gap-2"><X className="w-4 h-4" /> Abbruch</button>
@@ -342,6 +362,11 @@ const App = () => {
                               <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border flex items-center gap-2 ${gift.status === 'Verpackt' ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : gift.status === 'Gekauft' ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' : 'text-slate-400 bg-slate-400/10 border-slate-400/20'}`}>
                                 {gift.status === 'Verpackt' ? <CheckCircle2 className="w-3 h-3" /> : gift.status === 'Gekauft' ? <ShoppingCart className="w-3 h-3" /> : <Package className="w-3 h-3" />} {gift.status}
                               </span>
+                              {gift.url && (
+                                <a href={gift.url} target="_blank" rel="noopener noreferrer" className="p-1 text-indigo-400 hover:text-indigo-300 transition-colors" title="Bestell-Link öffnen">
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              )}
                             </div>
                             <p className="text-lg font-black text-white truncate leading-tight tracking-tight">{gift.name}</p>
                             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mt-1">{givers.find(g => g.id === gift.giverId)?.name || "Zuweisung offen"}</p>
@@ -349,7 +374,16 @@ const App = () => {
                           <div className="text-right flex items-center gap-4">
                             <p className="text-xl font-black text-indigo-400 font-mono tracking-tighter">{Number(gift.price).toFixed(2)}€</p>
                             <div className="flex gap-1">
-                              <button onClick={() => { setEditingGiftId(gift.id); setEditFormData({ name: gift.name, price: gift.price, giverId: gift.giverId || '', status: gift.status || 'Idee' }); }} className="p-2 text-slate-600 hover:text-indigo-400 hover:bg-slate-800 rounded-xl transition-all shadow-sm"><Edit2 className="w-5 h-5" /></button>
+                              <button onClick={() => { 
+                                setEditingGiftId(gift.id); 
+                                setEditFormData({ 
+                                  name: gift.name, 
+                                  price: gift.price, 
+                                  giverId: gift.giverId || '', 
+                                  status: gift.status || 'Idee',
+                                  url: gift.url || ''
+                                }); 
+                              }} className="p-2 text-slate-600 hover:text-indigo-400 hover:bg-slate-800 rounded-xl transition-all shadow-sm"><Edit2 className="w-5 h-5" /></button>
                               <button onClick={() => deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'gifts', gift.id))} className="p-2 text-slate-600 hover:text-red-500 hover:bg-slate-800 rounded-xl transition-all shadow-sm"><Trash2 className="w-5 h-5" /></button>
                             </div>
                           </div>
