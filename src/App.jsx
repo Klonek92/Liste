@@ -57,6 +57,16 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
+  // Hilfsfunktion zur URL-Formatierung
+  const formatUrl = (url) => {
+    if (!url || url.trim() === '') return '';
+    const cleanUrl = url.trim();
+    if (!/^https?:\/\//i.test(cleanUrl)) {
+      return `https://${cleanUrl}`;
+    }
+    return cleanUrl;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -305,7 +315,7 @@ const App = () => {
                       name: fd.get('name'), 
                       price: Number(fd.get('price')) || 0, 
                       giverId: fd.get('giverId') || '', 
-                      url: fd.get('url') || '',
+                      url: formatUrl(fd.get('url')),
                       status: 'Idee'
                     });
                     e.target.reset();
@@ -321,7 +331,7 @@ const App = () => {
                     </div>
                     <div className="relative">
                       <Link2 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input name="url" placeholder="Bestell-Link (optional)" className="w-full p-3 pl-10 bg-slate-800/50 border border-slate-700 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500" />
+                      <input name="url" placeholder="Bestell-Link (z.B. amazon.de)" className="w-full p-3 pl-10 bg-slate-800/50 border border-slate-700 rounded-xl text-xs outline-none focus:ring-1 focus:ring-indigo-500" />
                     </div>
                   </form>
                 </section>
@@ -348,7 +358,7 @@ const App = () => {
                                 price: Number(editFormData.price) || 0, 
                                 giverId: editFormData.giverId, 
                                 status: editFormData.status,
-                                url: editFormData.url || ''
+                                url: formatUrl(editFormData.url)
                               });
                               setEditingGiftId(null);
                             }} className="text-emerald-400 bg-emerald-400/10 px-6 py-2 rounded-xl text-sm font-black flex items-center gap-2 hover:bg-emerald-400/20"><Check className="w-4 h-4" /> Save</button>
